@@ -1,3 +1,13 @@
-const PersonData = props => props.persons.map((person) => <p key={person.id}>{person.name}  {person.number}</p>)
+const PersonData = ({person,handleToggleDelete}) => {
+    return (
+        <>
+        
+          <p>{person.name}  {person.number}</p>  
+         <button onClick={handleToggleDelete}>Delete</button>
+        </>
+     ) 
+
+}
+    
 
 export default PersonData;

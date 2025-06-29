@@ -4,7 +4,7 @@ import axios from 'axios'
 import PersonForm from './components/PersonForm'
 import PersonData from './components/PersonData'
 import FilterForm from './components/FilterForm'
-
+import phonebookServices from './services/phonebookServices'
 
 const App = () => {
   // const [persons, setPersons] = useState([
@@ -16,12 +16,10 @@ const App = () => {
   const [persons,setPersons] = useState([])
   const hook = () => {
     console.log('effect')
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        console.log('promise fulfilled')
-        setPersons(response.data)
-      })
+    phonebookServices.getAll().then(initialPhoneData => {
+      console.log('promise fulfilled')
+      setPersons(initialPhoneData)
+    })
   }
   
   useEffect(hook, [])
@@ -40,6 +38,20 @@ const App = () => {
 
   }
 
+  const handleToggleDelete = (id,name) => {
+     if ( window.confirm(`Delete ${name} ?`)){
+        phonebookServices.deletePhoneNumber(id)
+        .then( editedPhoneData=> {
+          alert(`deleting ${editedPhoneData} was succesfull`)
+          const newArray = persons.filter(n => n.id != id)
+          setPersons(newArray);
+        })
+      } else {
+        console.log("delete abort");
+      }
+    
+  }
+
   const handleInputName= (event) => {
     const inputValue = event.target.value;
     setNewName(inputValue);
@@ -53,20 +65,44 @@ const App = () => {
     for (let person of  persons){
       console.log(person)
       if (newName === person.name){
-        console.log("enter")
-        alert(`${newName} is already added to phonebook`)
-        return
+        if (window.confirm(`${person.name} is already added to phonebook, replace the old one with new one ?`)){
+
+              const updatedPerson = { ...person, number : newPhoneNumber}
+            
+              phonebookServices
+                .update(person.id, updatedPerson)
+                .then(returnedPerson => {
+                  setPersons(persons.map(person => person.id === returnedPerson.id ? returnedPerson : person))
+                })
+                .catch(error => {
+                  alert(
+                    `${newName} was already deleted from server`
+                  )
+                })
+              setNewName('');
+              setNewPhoneNumber('');
+              return;
+          
+        } else {
+          alert("create aborted");
+          setNewName('');
+          setNewPhoneNumber('');
+          return;
+        }
       }
     }
     const newPersonsObject = {
-      "id" : persons.length + 1,
       "name" : newName,
       "number" : newPhoneNumber
     }
-    const newArray = persons.concat(newPersonsObject)
-    console.log("data : ", newArray)
-    setPersons(newArray);
-    setNewName('');
+  
+    phonebookServices
+    .create(newPersonsObject)
+    .then( returnedPhoneData => 
+      {setPersons(persons.concat(returnedPhoneData));
+      setNewName('');
+      setNewPhoneNumber('');})
+   
   }
 
   return (
@@ -81,9 +117,13 @@ const App = () => {
       newPhoneNumber={newPhoneNumber}></PersonForm>
       
       <h2>Numbers</h2>
-      
-       {/* {persons.map((person) => <p key={person.id}>{person.name}  {person.number}</p>)} */}
-       <PersonData persons={personShow}></PersonData>
+      <li>
+       {personShow.map(person => {
+        return (  <PersonData id="deletteButton" key={person.id} person={person} handleToggleDelete={() => handleToggleDelete(person.id,person.name)}></PersonData> 
+      )
+        
+       } )}
+        </li>
     </div>
   )
 }
