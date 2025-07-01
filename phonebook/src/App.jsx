@@ -5,15 +5,13 @@ import PersonForm from './components/PersonForm'
 import PersonData from './components/PersonData'
 import FilterForm from './components/FilterForm'
 import phonebookServices from './services/phonebookServices'
-
+import Footer from './components/Footer'
+import Notification from './components/Notification'
 const App = () => {
-  // const [persons, setPersons] = useState([
-  //   { name: 'Arto Hellas', number: '040-123456', id: 1 },
-  //   { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
-  //   { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
-  //   { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 }
-  // ]) 
+  
   const [persons,setPersons] = useState([])
+  const [notificationMessage, setNotificationMessage] = useState('')
+  const [notificationType,setNotificationType] = useState('success');
   const hook = () => {
     console.log('effect')
     phonebookServices.getAll().then(initialPhoneData => {
@@ -42,9 +40,16 @@ const App = () => {
      if ( window.confirm(`Delete ${name} ?`)){
         phonebookServices.deletePhoneNumber(id)
         .then( editedPhoneData=> {
-          alert(`deleting ${editedPhoneData} was succesfull`)
+          alert(`deleting ${editedPhoneData.name} was succesfull`)
           const newArray = persons.filter(n => n.id != id)
           setPersons(newArray);
+        }).catch(error => {
+        //     alert(
+        //   `the note '${note.content}' was already deleted from server`
+        // )
+        setNotificationMessage(`information ${name} was already removed from server`)
+        setNotificationType('error');
+        setPersons(persons.filter(n => n.id !== id))
         })
       } else {
         console.log("delete abort");
@@ -73,11 +78,16 @@ const App = () => {
                 .update(person.id, updatedPerson)
                 .then(returnedPerson => {
                   setPersons(persons.map(person => person.id === returnedPerson.id ? returnedPerson : person))
+                  setNotificationMessage(`${newName} added to phonebook`)
+                  setNotificationType('success');
+
                 })
                 .catch(error => {
                   alert(
                     `${newName} was already deleted from server`
                   )
+                   setNotificationMessage(`${newName} was already deleted from server`);
+                   setNotificationType('error');
                 })
               setNewName('');
               setNewPhoneNumber('');
@@ -102,12 +112,16 @@ const App = () => {
       {setPersons(persons.concat(returnedPhoneData));
       setNewName('');
       setNewPhoneNumber('');})
+      setNotificationMessage(`${newName} added to phonebook`)
+      setNotificationType('success');
    
   }
 
   return (
     <div>
       <h2>Phonebook</h2>
+
+      <Notification type={notificationType} message={notificationMessage}></Notification>
       <FilterForm filterInput={filterInput} handleFilterInput={handleFilterInput}></FilterForm>
       <h2>Add a new</h2>
       <PersonForm addPerson={addPerson}
@@ -124,6 +138,7 @@ const App = () => {
         
        } )}
         </li>
+      <Footer></Footer>
     </div>
   )
 }
